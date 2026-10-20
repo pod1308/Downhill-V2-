@@ -3,7 +3,7 @@
 A map of pollution burden and permitted industrial facilities across the nine
 counties of the San Francisco Bay Area.
 
-*Website: https://pod1308.github.io/Downhill/* 
+*Website: https://pod1308.github.io/Downhill-V2-/* 
 
 Click anywhere and it tells you which census tract you're in, every
 CalEnviroScreen percentile for that tract, the nearest permitted facility and
