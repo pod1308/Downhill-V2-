@@ -1258,6 +1258,33 @@ function detectVector(){
   if(!st||!st.sources)return;
   for(var k in st.sources){ if(st.sources[k].type==="vector"){VSRC=k;break;} }
 }
+/* Waterways. CARTO's basemap moved from the OpenMapTiles schema (a "waterway"
+   layer with class and brunnel) to the Protomaps schema, where waterways are
+   lines inside the "water" layer, typed by kind or kind_detail, with a tunnel
+   tag. Both are handled, so the creeks draw whichever schema the style serves. */
+var HYDRO_KINDS=["river","stream","canal","drain","ditch"];
+function hydroPM(){
+  var L=((map.getStyle()||{}).layers)||[];
+  for(var i=0;i<L.length;i++)if(L[i]["source-layer"]==="waterway")return false;
+  return true;
+}
+function hydroLayer(){ return hydroPM()?"water":"waterway"; }
+function hydroFilter(){
+  if(!hydroPM())return ["!=",["get","brunnel"],"tunnel"];
+  return ["all",
+    ["in",["geometry-type"],["literal",["LineString","MultiLineString"]]],
+    ["any",["in",["coalesce",["get","kind"],""],["literal",HYDRO_KINDS]],
+           ["in",["coalesce",["get","kind_detail"],""],["literal",HYDRO_KINDS]]],
+    ["!",["in",["to-string",["coalesce",["get","tunnel"],"no"]],["literal",["yes","true","culvert","flooded","building_passage"]]]]];
+}
+/* One property shape for the trace, whichever schema the tiles use. */
+function hydroProps(pr){
+  pr=pr||{};
+  if(pr.class!=null||pr.brunnel!=null)return pr;
+  var cls=HYDRO_KINDS.indexOf(pr.kind_detail)>=0?pr.kind_detail:(HYDRO_KINDS.indexOf(pr.kind)>=0?pr.kind:null);
+  var tn=pr.tunnel!=null&&pr.tunnel!=="no"&&pr.tunnel!==false;
+  return {class:cls,brunnel:tn?"tunnel":null,name:pr.name,"name:en":pr["name:en"]};
+}
 function addSources(){
   function put(id,d){
     if(map.getSource(id))map.getSource(id).setData(d);
@@ -1289,16 +1316,16 @@ function firstSymbol(){
 function addBaseLayers(){
   var fs=firstSymbol();
   if(VSRC){
-    var wf=["!=",["get","brunnel"],"tunnel"];
-    map.addLayer({id:"hydro-glow",type:"line",source:VSRC,"source-layer":"waterway",filter:wf,
+    var wf=hydroFilter(),wl=hydroLayer();
+    map.addLayer({id:"hydro-glow",type:"line",source:VSRC,"source-layer":wl,filter:wf,
       layout:{"line-cap":"round","line-join":"round"},
       paint:{"line-color":"#4EA8DE","line-blur":3,"line-opacity":.22,
         "line-width":["interpolate",["linear"],["zoom"],7,1.6,11,5,15,11]}},fs);
-    map.addLayer({id:"hydro",type:"line",source:VSRC,"source-layer":"waterway",filter:wf,
+    map.addLayer({id:"hydro",type:"line",source:VSRC,"source-layer":wl,filter:wf,
       layout:{"line-cap":"round","line-join":"round"},
       paint:{"line-color":"#4EA8DE","line-opacity":.85,
         "line-width":["interpolate",["linear"],["zoom"],7,.5,11,1.5,15,3.4]}},fs);
-    map.addLayer({id:"flow",type:"line",source:VSRC,"source-layer":"waterway",filter:wf,
+    map.addLayer({id:"flow",type:"line",source:VSRC,"source-layer":wl,filter:wf,
       layout:{"line-cap":"butt"},
       paint:{"line-color":"#BFE6FF","line-opacity":.9,"line-dasharray":[0,4,3],
         "line-width":["interpolate",["linear"],["zoom"],7,.7,11,1.9,15,4]}},fs);
@@ -1780,8 +1807,11 @@ function reachK(cs){
 var RG=null;
 function buildNetwork(){
   var g={byStart:{},all:[],seen:{}};
-  srcFeats("waterway").forEach(function(f){
-    var pr=f.properties||{};
+  srcFeats(hydroLayer()).forEach(function(f){
+    var gt=f.geometry&&f.geometry.type;
+    if(gt!=="LineString"&&gt!=="MultiLineString")return;   /* the Protomaps water layer also holds polygons */
+    var pr=hydroProps(f.properties);
+    if(!pr.class)return;
     reachLines(f).forEach(function(cs){
       if(!cs||cs.length<2)return;
       var k=reachK(cs);
@@ -1826,7 +1856,7 @@ function inWater(c){
     if(f.geometry.type!=="Polygon"&&f.geometry.type!=="MultiPolygon")continue;
     if(pr.brunnel==="tunnel")continue;
     try{ if(turf.booleanPointInPolygon(pt,f))
-      return {name:pr.name||pr["name:en"]||null,cls:pr.class||"water"}; }catch(e){}
+      return {name:pr.name||pr["name:en"]||null,cls:pr.class||pr.kind||"water"}; }catch(e){}
   }
   return null;
 }
@@ -1904,21 +1934,33 @@ function runTrace(ll){
   if(st.end!=="water"){
     traceBusy=true;
     var home={c:map.getCenter(),z:map.getZoom()},passes=0;
+    /* Wait for the new tiles. Not map "idle": the flow animation repaints every
+       frame, so idle never fires and the trace would stay busy for good. */
+    function whenTiles(cb){
+      var t0=Date.now();
+      (function poll(){
+        var ok=false; try{ ok=map.areTilesLoaded(); }catch(e){ ok=true; }
+        if(ok||Date.now()-t0>5000){ cb(); return; }
+        setTimeout(poll,150);
+      })();
+    }
     (function extend(){
       passes++;
       var tail=st.path[st.path.length-1];
-      map.once("idle",function(){
-        buildNetwork();
-        var before=st.hops;
-        st.end="";
-        walk(st,40);
-        if(st.end!=="water"&&st.hops>before&&passes<5){ extend(); return; }
-        if(st.end!=="water"&&st.hops===before)st.end="dryup";
-        traceBusy=false;
-        map.jumpTo({center:home.c,zoom:home.z});
-        finishTrace(st,click,join,nr.km);
-      });
       map.jumpTo({center:{lng:tail[0],lat:tail[1]},zoom:Math.max(11,map.getZoom())});
+      setTimeout(function(){ whenTiles(function(){
+        try{
+          buildNetwork();
+          var before=st.hops;
+          st.end="";
+          walk(st,40);
+          if(st.end!=="water"&&st.hops>before&&passes<5){ extend(); return; }
+          if(st.end!=="water"&&st.hops===before)st.end="dryup";
+          traceBusy=false;
+          map.jumpTo({center:home.c,zoom:home.z});
+          finishTrace(st,click,join,nr.km);
+        }catch(e){ traceBusy=false; toast("The trace couldn't finish. Try another spot."); }
+      }); },200);
     })();
     return;
   }
@@ -1955,9 +1997,17 @@ function drawTrace(t){
     map.getSource("trace").setData({type:"FeatureCollection",features:fs});
 }
 
+function clearTrace(){
+  TR=null; traceBusy=false;
+  drawTrace(null);
+  setArm(null,false);
+  if(open==="trace")openPanel("trace",true);
+}
 function traceInit(){
   var b=document.getElementById("trBtn");
   if(b)b.onclick=function(){ setArm("t",!armT); };
+  var cr=document.getElementById("trClr");
+  if(cr)cr.onclick=clearTrace;
   var d=document.getElementById("trDl");
   if(d)d.onclick=function(){
     var t=TR,fs=[];
@@ -2994,6 +3044,7 @@ function tracePanel(){
   h+='<button class="btn" id="trBtn" style="width:100%"><i class="ph ph-flow-arrow"></i> '+
      (TR?"Trace from another spot":"Pick a spot")+'</button>';
   if(!TR)return h;
+  h+='<button class="btn line" id="trClr" style="width:100%;margin-top:8px"><i class="ph ph-arrow-counter-clockwise"></i> Clear trace</button>';
   var t=TR;
   h+='<div class="hd" style="margin-top:12px"><div class="hd1">'+(t.end==="water"?esc(t.water):"Route ends in a pipe")+'</div>'+
      '<div class="hd2">'+fmtDur(t.totalSec)+' · '+fmtKm(t.km)+' in channel</div></div>';
@@ -3271,7 +3322,7 @@ function bindPopups(){
   });
   map.on("click","hydro",function(e){
     if(armAny())return;
-    var p=e.features[0].properties||{};
+    var p=hydroProps(e.features[0].properties);
     popup(e.lngLat,'<div class="badge">Published, OpenStreetMap</div>'+
       '<div class="pt">'+esc(p.name||"Unnamed waterway")+'</div>'+
       '<div class="ps">'+esc(String(p.class||"stream").replace(/_/g," "))+'</div>');
