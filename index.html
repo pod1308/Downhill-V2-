@@ -49,7 +49,7 @@ body{background:var(--ink);color:var(--text);
 .btn.sm{height:33px;padding:0 13px;font-size:12.5px}
 .btn i{font-size:15px}
 
-/* ================= LANDING ================= */
+/* LANDING */
 #landing{position:fixed;inset:0;z-index:20;overflow-y:auto;overflow-x:hidden}
 #landing.gone{display:none}
 #scrim{position:fixed;inset:0;z-index:-1;pointer-events:none;
@@ -132,7 +132,7 @@ footer{margin-top:70px;padding-top:24px;border-top:1px solid var(--line);display
   flex-wrap:wrap;justify-content:space-between;font-family:'Geist Mono',monospace;font-size:10.5px;
   color:var(--faint);text-align:left;line-height:1.75}
 
-/* ================= ATLAS ================= */
+/*  ATLAS  */
 #app{position:fixed;inset:0;z-index:12;pointer-events:none;opacity:0;visibility:hidden;
   transition:opacity .45s var(--ease),visibility 0s linear .45s}
 #app.on{opacity:1;visibility:visible;transition:opacity .45s var(--ease),visibility 0s}
@@ -498,7 +498,7 @@ details.pn.x>summary{display:flex;gap:7px;padding:8px 0;font-size:12px;color:var
 
 <div id="stage"></div>
 
-<!-- ================= LANDING ================= -->
+<!-- LANDING -->
 <div id="landing">
   <div id="scrim"></div>
   <nav id="nav"><div class="wrap">
@@ -651,7 +651,7 @@ details.pn.x>summary{display:flex;gap:7px;padding:8px 0;font-size:12px;color:var
   </div></section>
 </div>
 
-<!-- ================= ATLAS ================= -->
+<!-- ATLAS -->
 <div id="app">
   <nav id="rail">
     <div class="logo"><i class="ph-fill ph-drop-half-bottom"></i></div>
@@ -911,14 +911,13 @@ var FAC_CATS={
   waste:{nm:"Landfill or waste handling",c:"#E9A23B"},
   power:{nm:"Power generation",c:"#E97B2B"}
 };
-/* ==========================================================================
+/* 
    FACILITIES, FROM EPA'S REGISTER
 
    Read from EPA's FRS_INTERESTS feature service, where REGISTRY_ID is a
    non-nullable field, so every facility drawn carries its registry ID and
    every report link resolves. Coordinates are EPA's, with EPA's own accuracy
-   estimate in metres per record, shown in the popup.
-   ========================================================================== */
+   estimate in metres per record, shown in the popup. */
 var FRS_URL="https://services.arcgis.com/cJ9YHowT8TU7DUyn/arcgis/rest/services/"+
             "FRS_INTERESTS/FeatureServer/0";
 var FRS_FIELDS="REGISTRY_ID,PRIMARY_NAME,LOCATION_ADDRESS,CITY_NAME,COUNTY_NAME,"+
@@ -927,7 +926,7 @@ var FRS_FIELDS="REGISTRY_ID,PRIMARY_NAME,LOCATION_ADDRESS,CITY_NAME,COUNTY_NAME,
 /* At low zoom only the significant permit holders, or the map is a smear of
    dry cleaners. Zoom past FAC_ALL_ZOOM and the filter drops away, so every
    regulated site in view is drawn. Coverage without the slowness. */
-/* ==========================================================================
+/* 
    FACILITY TIERS
 
    EPA's register holds every site subject to federal environmental regulation
@@ -937,8 +936,7 @@ var FRS_FIELDS="REGISTRY_ID,PRIMARY_NAME,LOCATION_ADDRESS,CITY_NAME,COUNTY_NAME,
 
    Each tier is a where-clause fragment against the registry. Nothing is
    invented: a facility appears in a tier because EPA files it under that
-   programme, not because I judged it important.
-   ========================================================================== */
+   programme, not because I judged it important. */
 var FAC_TIERS=[
   {k:"air",   nm:"Major air polluters", on:true,
    d:"Facilities EPA classes as majors under the Clean Air Act.",
@@ -1024,9 +1022,8 @@ function esc(s){
 }
 function ease(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
 
-/* ==========================================================================
-   CITATIONS. Every URL below was checked before publication.
-   ========================================================================== */
+/* 
+   CITATIONS. Every URL below was checked before publication. */
 var CITE={
 dac:{s:"CalEPA",t:"SB 535 disadvantaged communities, 2026",
  b:"CalEPA designates disadvantaged communities for California Climate Investments. The 2026 designation, used for projects selected on or after 18 September 2026, includes: tracts in the top 25% of CalEnviroScreen 5.0 overall scores; tracts with no overall score because of data gaps but in the top 5% for pollution burden; tracts overlapping a 2022 designated tract by at least 25%; and lands under the control of federally recognized tribes. This map reads the tract list live from the state's published service and shows CalEPA's own label for each tract.",
@@ -1200,9 +1197,8 @@ function facLoad(){
   });
 }
 
-/* ==========================================================================
-   ENVIRONMENT CHECK
-   ========================================================================== */
+/* 
+   ENVIRONMENT CHECK */
 function hasWebGL(){
   try{
     var c=document.createElement("canvas");
@@ -1228,16 +1224,14 @@ if(missing.length){
   return;
 }
 
-/* ==========================================================================
-   EPA REPORT LINKS. The registry ID arrives with the facility.
-   ========================================================================== */
+/*
+   EPA REPORT LINKS. The registry ID arrives with the facility. */
 function reportURL(fid){
   return "https://echo.epa.gov/detailed-facility-report?fid="+encodeURIComponent(fid);
 }
 
-/* ==========================================================================
-   MAP
-   ========================================================================== */
+/* 
+   MAP */
 map=new maplibregl.Map({container:"stage",style:STYLE[theme],center:BAY.center,
   zoom:BAY.zoom,minZoom:6,maxZoom:19,attributionControl:true});
 map.addControl(new maplibregl.NavigationControl({showCompass:false}),"bottom-right");
@@ -1477,9 +1471,8 @@ function anim(ts){
   requestAnimationFrame(anim);
 }
 
-/* ==========================================================================
-   CALENVIROSCREEN, progressive enhancement
-   ========================================================================== */
+/*
+   CALENVIROSCREEN, progressive enhancement */
 function chip(state,txt){
   var c=document.getElementById("dataChip");
   if(!c)return;
@@ -1614,9 +1607,8 @@ function indexTracts(){
   });
 }
 
-/* ==========================================================================
-   TOOLS
-   ========================================================================== */
+/* 
+   TOOLS */
 var armI=false,armT=false,mk=null,lastI=null;
 function armAny(){return armI||armT||AREA.picking;}
 function setArm(k,on){
@@ -1714,7 +1706,7 @@ function inspectText(){
   return L.join("\n");
 }
 
-/* ==========================================================================
+/* 
    DOWNSTREAM TRACE
 
    Follows water off a point and down the real stream network, then estimates
@@ -1741,8 +1733,7 @@ function inspectText(){
      In a built-up area most of that leg is a storm drain, and a storm drain
      can cross a surface watershed boundary and come out somewhere a slope
      would not predict. Rainfall intensity, flow volume, tides and pumps are
-     all absent too.
-   ========================================================================== */
+     all absent too. */
 
 /* Typical mid-channel velocities in metres per second, by OSM waterway class,
    plus a storm-drain figure for the piped first leg. Real channels vary with
@@ -1984,18 +1975,6 @@ function traceInit(){
   };
 }
 
-/* ==========================================================================
-   NEW IN THIS VERSION
-
-   Four additions, all in service of the one question the map answers: what
-   regulated sites are near this address, and what do their records say.
-
-     radius      how far out to count facilities, and what they break down into
-     compare     two addresses side by side
-     explain     all 23 indicators in plain English, flagging the six that are
-                 computed from facility data
-     share       a link that reopens the map on the same place
-   ========================================================================== */
 
 var RADIUS_KM=3;                       /* what "nearby" means, user-set */
 var RADII=[1,3,5,10];
@@ -2137,7 +2116,7 @@ function explainInit(){
   });
 }
 
-/* ==========================================================================
+/* 
    DESIGNATIONS
 
    The state's own lists, read live from the agencies that keep them:
@@ -2145,8 +2124,7 @@ function explainInit(){
      Tribal lands designated with them (same service, three boundary sources)
      AB 617 communities (CARB)
    and district boundaries from the Census Bureau. Nothing here is computed.
-   A tract shows as designated only because the designating agency says so.
-   ========================================================================== */
+   A tract shows as designated only because the designating agency says so. */
 var DAC_URL="https://services1.arcgis.com/PCHfdHz4GlDNAhBb/arcgis/rest/services/"+
             "SB_535_Disadvantaged_Communities_2026/FeatureServer";
 var AB617_URL="https://gis.carb.arb.ca.gov/hosting/rest/services/"+
@@ -2361,7 +2339,7 @@ function districtShape(k,num){
   });
 }
 
-/* ==========================================================================
+/* 
    AREA SUMMARY
 
    For a county, a district, an AB 617 community or a hand-picked set of
@@ -2371,8 +2349,7 @@ function districtShape(k,num){
    What is added up: population, tract counts, and residents in each group
    estimated as tract population times the tract's published share.
    What is not: percentiles. A mean of ranks is not a rank, so the summary
-   shows how many tracts fall in each band instead.
-   ========================================================================== */
+   shows how many tracts fall in each band instead. */
 var AREA={kind:"county",label:"",ids:[],busy:false,err:"",picking:false,shape:null};
 var TC={};
 function tractCentre(f){
@@ -2560,14 +2537,13 @@ function areaText(){
   return L.join("\n");
 }
 
-/* ==========================================================================
+/* 
    WHAT CHANGED ELSEWHERE
 
    Studies that measured what happened after a real closure, cleanup or
    retrofit. Each entry says only what the paper's abstract, or the
    authors' institution, reports. Effects are from other places and other
-   years and are not a forecast for any site on this map.
-   ========================================================================== */
+   years and are not a forecast for any site on this map. */
 var EVID_KINDS=[["all","All"],["ca","In California"],["power","Power plants"],["industry","Industry"],
   ["cleanup","Cleanups"],["diesel","Trucks, ports, buses"],["traffic","Traffic"],["fuel","Fuel rules"],
   ["housing","Home prices"]];
@@ -2717,14 +2693,13 @@ document.addEventListener("click",function(e){
   openPanel("evidence",true);
 });
 
-/* ==========================================================================
+/* 
    PANEL BUILDING BLOCKS
 
    Panels show facts, not prose. Anything longer than a line sits behind a
    click: a section collapses to its title and one key value, and a note
    collapses to a short label. Open state survives re-renders, so a panel
-   refreshing when data arrives doesn't snap shut what you just opened.
-   ========================================================================== */
+   refreshing when data arrives doesn't snap shut what you just opened. */
 var OPENED={};
 document.addEventListener("toggle",function(e){
   var d=e.target; if(!d||!d.getAttribute)return;
@@ -3074,9 +3049,8 @@ function readPlaceLink(){
   return {lat:+m[1],lng:+m[2],r:m[3]?+m[3]:3};
 }
 
-/* ==========================================================================
-   PANELS
-   ========================================================================== */
+/* 
+   PANELS */
 function cesBanner(){
   if(CES_STATE==="ok")return "";
   if(CES_STATE==="loading")
@@ -3386,14 +3360,13 @@ Object.keys(COUNTY_FIPS).forEach(function(c){
     }});
   })(i);
 });
-/* ==========================================================================
+/* 
    ADDRESS SEARCH
 
    Census Bureau geocoder. Public, no key, no rate-limit policy to breach, and
    authoritative for US street addresses in a way a commercial geocoder is not.
    Typing something that looks like an address queries it; everything else
-   still filters the command list as before.
-   ========================================================================== */
+   still filters the command list as before. */
 var GEO_URL="https://geocoding.geo.census.gov/geocoder/locations/onelineaddress";
 var geoHits=[], geoBusy=false, geoNone=false, geoErr="", geoLast="", geoTimer=null, geoSeq=0;
 
@@ -3539,9 +3512,8 @@ document.getElementById("shareBtn").onclick=function(){
   else toast("Link is in the address bar");
 };
 
-/* ==========================================================================
-   LANDING
-   ========================================================================== */
+/* 
+   LANDING */
 var CAMS={
  "1":{center:[-119.30,37.20],zoom:5.3,bearing:0,layers:{ces:1}},
  "2":{center:[-118.22,33.98],zoom:9.4,bearing:-6,layers:{dac:1,tribal:1}},
@@ -3704,9 +3676,8 @@ if((location.hash||"").indexOf("#atlas")===0){
   },300);
 }
 
-/* ==========================================================================
-   NO-WEBGL TABLE VIEW
-   ========================================================================== */
+/*
+   NO-WEBGL TABLE VIEW */
 function wireFallback(){
   var show=document.getElementById("fbShow"),
       back=document.getElementById("fbBack"),
